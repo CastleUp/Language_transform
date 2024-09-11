@@ -3,3 +3,6 @@ venv/
 
 # Исключить файл config_prod.py
 config_prod.py
+
+# Исключить внутренние файлы VS code
+.vscode/

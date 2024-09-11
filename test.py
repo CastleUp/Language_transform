@@ -5,7 +5,7 @@ import pandas as pd
 morph = pymorphy2.MorphAnalyzer()
 
 # Исходный список животных
-animals = ['лошадь', 'собака', 'кошка', 'жаба', 'комар', 'тигр', 'слон', 'обезьяна', 'мышь', 'рысь']
+animals = ['Абай', 'Абайский', 'Поселок']
 
 # Переводим каждое слово в родительный падеж
 animals_genitive = [morph.parse(animal)[0].inflect({'gent'}).word for animal in animals]

@@ -1,11 +1,13 @@
 import pymorphy2
 import pandas as pd
+from request import connect_to_db, fetch_data_from_db  # Импортируем функции из request.py
 
 # Инициализируем морфологический анализатор для русского языка
 morph = pymorphy2.MorphAnalyzer()
 
-# Списки районов на русском и казахском языках
-districts_ru = ['Абайский район', 'поселок Топар', 'Шилектинский сельский округ', 'Бухар-Жырауский район']
+# Подключаемся к базе данных и загружаем районы
+conn = connect_to_db()
+districts_ru = fetch_data_from_db(conn)  # Получаем список районов из БД
 districts_kk = ['Абай ауданы', 'Топар ауылы', 'Шілде ауылдық округі', 'Бұқар-Жырау ауданы']
 
 # Функция для выбора языка

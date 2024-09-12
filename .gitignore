@@ -6,3 +6,6 @@ config_prod.py
 
 # Исключить внутренние файлы VS code
 .vscode/
+
+# Исключить соединение
+__pycache__/

@@ -13,20 +13,50 @@ def connect_to_db():
     )
     return conn
 
-# Функция для выполнения SQL-запроса
+# Функция для выполнения SQL-запроса для получения данных
 def fetch_data_from_db(conn):
     query = """
-    SELECT name_ru FROM dict_budget_regions 
+    SELECT id, name_ru FROM dict_budget_regions 
     WHERE beg_date <= '2024-09-01' AND end_date >= '2024-09-01'
-    AND code LIKE '30%'
+    AND name_ru IS NOT NULL
     """
     df = pd.read_sql_query(query, conn)
-    return df['name_ru'].tolist()  # Возвращаем данные в виде списка
+    return df
+
+# Функция для создания новой таблицы в базе данных
+def create_declined_table(conn):
+    query = """
+    CREATE TABLE IF NOT EXISTS dict_budget_regions_declined (
+        id SERIAL PRIMARY KEY,
+        name_ru VARCHAR(255),
+        name_ru_declined VARCHAR(255)
+    );
+    """
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        conn.commit()
+
+# Функция для вставки данных в новую таблицу
+def insert_declined_data(conn, data):
+    with conn.cursor() as cursor:
+        query = """
+        INSERT INTO dict_budget_regions_declined (id, name_ru, name_ru_declined)
+        VALUES (%s, %s, %s)
+        """
+        cursor.executemany(query, data)
+        conn.commit()
 
 def main():
     conn = connect_to_db()
-    districts_ru = fetch_data_from_db(conn)
-    print(districts_ru)
+
+    # Создаем таблицу для данных с родительным падежом
+    create_declined_table(conn)
+
+    # Получаем данные из исходной таблицы
+    df = fetch_data_from_db(conn)
+    print(df)
+
+    conn.close()
 
 if __name__ == "__main__":
     main()

@@ -16,9 +16,8 @@ def connect_to_db():
 # Функция для выполнения SQL-запроса и получения данных
 def fetch_data_from_db(conn):
     query = """
-    SELECT id, code, name_ru, name_kk FROM dict_budget_regions 
+    SELECT id, code, coalesce(name_ru,'') as name_ru, COALESCE(name_kk,'') as name_kk FROM dict_budget_regions 
     WHERE beg_date <= '2024-09-01' AND end_date >= '2024-09-01'
-    AND name_ru IS NOT NULL AND name_kk IS NOT NULL
     """
     df = pd.read_sql_query(query, conn)
     return df

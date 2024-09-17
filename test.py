@@ -7,30 +7,42 @@ morph = pymorphy2.MorphAnalyzer()
 
 # Функция для склонения слов на русском языке
 def decline_russian(phrase):
-    stop_words = ['село', 'район', 'поселок', 'г.', 'город']
+    stop_words = ['село', 'район', 'поселок', 'г.', 'город', 'область', 'п.', 'с.']
 
     def restore_case(word, original_word):
         """Восстановление регистра."""
         if original_word.istitle():
             return word.capitalize()
+        elif original_word.isupper():
+            return word.upper()
         return word
 
     def replace_e_with_e(word):
         """Запрет на замену 'е' на 'ё'."""
         return word.replace('ё', 'е')
 
-    def process_word(word):
+    def process_word(word, original_word):
+        """Склоняем одно слово и восстанавливаем его регистр."""
+        if original_word.isupper():  # Если это аббревиатура, не склоняем
+            return original_word
         parsed_word = morph.parse(word)[0]
         declined_word = parsed_word.inflect({'gent'})
         if declined_word:
-            return restore_case(replace_e_with_e(declined_word.word), word)
+            return restore_case(replace_e_with_e(declined_word.word), original_word)
         else:
             return word
 
+    def process_hyphenated_word(hyphenated_word):
+        """Обрабатываем слова через дефис."""
+        parts = hyphenated_word.split('-')
+        declined_parts = [process_word(part, original_part) for part, original_part in zip(parts, hyphenated_word.split('-'))]
+        return '-'.join(declined_parts)
+
+    # Обрабатываем фразы с точками
     if '.' in phrase:
         parts = phrase.split('.')
         first_part = parts[0] + '.'
-        last_part = process_word(parts[1].strip())
+        last_part = parts[1].strip().capitalize()  # Не склоняем слово после точки
         return first_part + last_part
 
     words = phrase.split()
@@ -39,31 +51,45 @@ def decline_russian(phrase):
     skip_next = False
     for i, word in enumerate(words):
         if word.lower() in stop_words and i + 1 < len(words):
-            declined_words.append(process_word(word))
-            declined_words.append(words[i + 1].capitalize())
+            # Добавляем слово из стоп-листа, но не склоняем следующее
+            declined_words.append(process_word(word, word))  # Склоняем слово из стоп-листа
+            declined_words.append(words[i + 1].capitalize())  # Сохраняем следующее слово без изменений, с заглавной буквы
             skip_next = True
         elif skip_next:
             skip_next = False
+        elif '-' in word:  # Обрабатываем дефисные слова
+            declined_words.append(process_hyphenated_word(word))
         else:
-            declined_words.append(process_word(word))
+            declined_words.append(process_word(word, word))
     
     return ' '.join(declined_words)
 
+
+
 # Функция для склонения слов на казахском языке
 def decline_kazakh(phrase):
+    """
+    Склонение казахских слов в родительный падеж.
+    """
+    # Проверка на пустую строку
+    if not phrase or phrase.strip() == '':
+        return phrase
+    
     words = phrase.split()
     
     # Обрабатываем последнее слово или группу слов с дефисом
     last_word = words[-1]
     
-    if '-' in last_word:  # Если есть дефис
+    if '-' in last_word:  # Если есть дефис, обрабатываем только последнее слово перед дефисом
         parts = last_word.split('-')
-        declined_last_part = add_kazakh_genitive(parts[-1])  # Склоняем только последнюю часть
-        declined_last_word_full = '-'.join(parts[:-1] + [declined_last_part])
+        declined_last_part = parts[-1]
+        declined_last_word = add_kazakh_genitive(declined_last_part)  # Склоняем только последнюю часть
+        declined_last_word_full = '-'.join(parts[:-1] + [declined_last_word])
     else:
-        declined_last_word_full = add_kazakh_genitive(last_word)
+        declined_last_word_full = add_kazakh_genitive(last_word)  # Склоняем слово
 
     return ' '.join(words[:-1] + [declined_last_word_full])
+
 
 # Функция для добавления окончания родительного падежа на казахском
 def add_kazakh_genitive(word):
@@ -110,11 +136,13 @@ def process_districts():
     #create_declined_table(conn)
 
     # Вставляем данные в таблицу
-    #insert_declined_data(conn, data)
-
+    insert_declined_data(conn, data)
+    
     conn.close()
     print("Данные успешно сохранены в новую таблицу.")
     print(df)
+
+
 
 if __name__ == "__main__":
     process_districts()
